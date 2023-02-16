@@ -1,0 +1,48 @@
+name: Backup
+
+on:
+  schedule:
+    # Runs at 00:00 UTC on Sat. 
+    - cron: '0 0 * * 6'
+    
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_BACKUP_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_BACKUP_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+      
+    - name: Prepare AWS temporary credentials
+      run: |
+      	echo Sleeping until next 30s round
+      	sleep $((31-$(echo $(date +%S)%30 | bc)))
+      	echo Retrieving fresh OTP
+      	python -m pip install pyotp; python -c "import pyotp; print(pyotp.TOTP('secrets.AWS_S3_OTP').now())" > otp.txt
+    	echo Getting temp credentials
+    	aws sts get-session-token --serial-number secrets.AWS_BACKUP_ACCESS_MFA_ARN --token-code $(cat otp.txt) > creds.json
+    	echo Setting temp credentials
+    	export AWS_ACCESS_KEY_ID=$(jq -r .Credentials.AccessKeyId creds.json)
+    	export AWS_SECRET_ACCESS_KEY=$(jq -r .Credentials.SecretAccessKey creds.json)
+    	export AWS_SESSION_TOKEN=$(jq -r .Credentials.SessionToken creds.json)
+        
+    - name: Package
+      run: tar -cf /tmp/package.tar .
+    
+    - name: Import-key 
+      run: echo -n ${{ secrets.BACKUP_GPG_PUBK }} | base64 -d | gpg --trust-model always --import
+    
+    - name: Encrypt
+      run: gpg --batch --encrypt -r support@c2a-sec.com -o /tmp/package.tar.gpg --trust-model always /tmp/package.tar
+      
+    - name: Copy to S3
+      run: aws s3 cp /tmp/package.tar.gpg s3://mcfnoqiezwxxpwzvomau/${{ github.repository }}/${{ github.ref_name }}/$(date +%Y-%m-%dT%H:%M:%S).tar.gpg
+      
+    - name: Cleanup
+      run: rm -f /tmp/package.tar /tmp/package.tar.gpg
