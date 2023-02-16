@@ -20,7 +20,7 @@ jobs:
         aws-region: eu-west-1
       
     - name: Prepare the AWS temporary credentials
-      run: |
+      run:
         echo Sleeping until next 30s round
         sleep $((31-$(echo $(date +%S)%30 | bc)))
         echo Retrieving fresh OTP
