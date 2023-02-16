@@ -21,10 +21,10 @@ jobs:
       
     - name: Prepare AWS temporary credentials
       run: |
-      	echo Sleeping until next 30s round
-      	sleep $((31-$(echo $(date +%S)%30 | bc)))
-      	echo Retrieving fresh OTP
-      	python -m pip install pyotp
+        echo Sleeping until next 30s round
+        sleep $((31-$(echo $(date +%S)%30 | bc)))
+        echo Retrieving fresh OTP
+        python -m pip install pyotp
         python -c "import pyotp; print(pyotp.TOTP('secrets.AWS_S3_OTP').now())" > otp.txt
         echo Getting temp credentials
         aws sts get-session-token --serial-number secrets.AWS_BACKUP_ACCESS_MFA_ARN --token-code $(cat otp.txt) > creds.json
