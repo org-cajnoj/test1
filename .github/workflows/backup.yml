@@ -19,7 +19,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_BACKUP_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
       
-    - name: Prepare AWS temporary credentials
+    - name: Prepare the AWS temporary credentials
       run: |
         echo Sleeping until next 30s round
         sleep $((31-$(echo $(date +%S)%30 | bc)))
