@@ -25,13 +25,13 @@ jobs:
       	sleep $((31-$(echo $(date +%S)%30 | bc)))
       	echo Retrieving fresh OTP
       	python -m pip install pyotp
-      	python -c "import pyotp; print(pyotp.TOTP('secrets.AWS_S3_OTP').now())" > otp.txt
-    	echo Getting temp credentials
-    	aws sts get-session-token --serial-number secrets.AWS_BACKUP_ACCESS_MFA_ARN --token-code $(cat otp.txt) > creds.json
-    	echo Setting temp credentials
-    	export AWS_ACCESS_KEY_ID=$(jq -r .Credentials.AccessKeyId creds.json)
-    	export AWS_SECRET_ACCESS_KEY=$(jq -r .Credentials.SecretAccessKey creds.json)
-    	export AWS_SESSION_TOKEN=$(jq -r .Credentials.SessionToken creds.json)
+        python -c "import pyotp; print(pyotp.TOTP('secrets.AWS_S3_OTP').now())" > otp.txt
+        echo Getting temp credentials
+        aws sts get-session-token --serial-number secrets.AWS_BACKUP_ACCESS_MFA_ARN --token-code $(cat otp.txt) > creds.json
+        echo Setting temp credentials
+        export AWS_ACCESS_KEY_ID=$(jq -r .Credentials.AccessKeyId creds.json)
+        export AWS_SECRET_ACCESS_KEY=$(jq -r .Credentials.SecretAccessKey creds.json)
+        export AWS_SESSION_TOKEN=$(jq -r .Credentials.SessionToken creds.json)
         
     - name: Package
       run: tar -cf /tmp/package.tar .
